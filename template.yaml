@@ -1,17 +1,25 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: "Plantilla per desplegar una web estatica amb S3 - Classe DevOps"
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Plantilla per desplegar una web estatica amb S3 - Classe DevOps'
+
+# NOU: Definim un paràmetre que l'alumne haurà d'omplir
+Parameters:
+  NomAlumne:
+    Type: String
+    Description: 'Escriu el teu nom o cognom (en minúscules i sense accents) per fer el bucket únic.'
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: '[a-z0-9\-]+'
+    ConstraintDescription: 'Només minúscules, números i guions.'
 
 Resources:
   # 1. El Bucket de S3 on viurà la web
   BucketWebClasse:
-    Type: "AWS::S3::Bucket"
+    Type: 'AWS::S3::Bucket'
     Properties:
-      # Nom únic (canvieu el sufix si algú ja l'ha agafat)
-      BucketName: "web-classe-devops-2024-exemple"
-      # Configurem el bucket com a web estàtica
+      # MODIFICAT: Fem servir el paràmetre per crear un nom únic
+      BucketName: !Sub 'web-classe-devops-${NomAlumne}-2024'
       WebsiteConfiguration:
-        IndexDocument: "index.html"
-      # Obrim la web al públic (perquè tothom la pugui veure)
+        IndexDocument: 'index.html'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -20,32 +28,29 @@ Resources:
 
   # 2. Política per permetre que tothom llegeixi els fitxers de la web
   BucketPolicy:
-    Type: "AWS::S3::BucketPolicy"
+    Type: 'AWS::S3::BucketPolicy'
     Properties:
       Bucket: !Ref BucketWebClasse
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Sid: PublicReadGetObject
             Effect: Allow
-            Principal: "*"
-            Action: "s3:GetObject"
-            Resource: !Sub "${BucketWebClasse.Arn}/*"
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${BucketWebClasse.Arn}/*'
 
-  # 3. El fitxer HTML que pugem al bucket (El codi de la web)
+  # 3. El fitxer HTML que pugem al bucket
   FitxerIndex:
-    Type: "AWS::S3::Object"
+    Type: 'AWS::S3::Object'
     Properties:
       Target:
         Bucket: !Ref BucketWebClasse
-        Key: "index.html"
-      # Aquí llegim el fitxer del repositori de GitHub
-      # El pipeline s'encarrega de posar el codi font a la carpeta 'SourceArtifact'
-      Source: "SourceArtifact/index.html"
-      ContentType: "text/html"
+        Key: 'index.html'
+      Source: 'SourceArtifact/index.html'
+      ContentType: 'text/html'
 
-# Sortida: La URL on podran veure la seva web
 Outputs:
   URLWeb:
-    Description: "URL de la web desplegada"
+    Description: 'URL de la web desplegada'
     Value: !GetAtt BucketWebClasse.WebsiteURL
