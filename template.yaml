@@ -1,56 +1,54 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Plantilla per desplegar una web estatica amb S3 - Classe DevOps'
+Description: 'Plantilla per desplegar un servidor web EC2 - Classe DevOps'
 
-# NOU: Definim un paràmetre que l'alumne haurà d'omplir
 Parameters:
   NomAlumne:
     Type: String
-    Description: 'Escriu el teu nom o cognom (en minúscules i sense accents) per fer el bucket únic.'
+    Description: 'Escriu el teu nom o cognom (en minúscules i sense accents) per fer el recurs únic.'
     MinLength: 3
     MaxLength: 20
     AllowedPattern: '[a-z0-9\-]+'
     ConstraintDescription: 'Només minúscules, números i guions.'
 
 Resources:
-  # 1. El Bucket de S3 on viurà la web
-  BucketWebClasse:
-    Type: 'AWS::S3::Bucket'
+  # 1. El grup de seguretat (Tallafocs) per permetre el tràfic web
+  MeuGrupDeSeguretat:
+    Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      # MODIFICAT: Fem servir el paràmetre per crear un nom únic
-      BucketName: !Sub 'web-classe-devops-${NomAlumne}-2024'
-      WebsiteConfiguration:
-        IndexDocument: 'index.html'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
+      GroupDescription: 'Permetre HTTP i SSH'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
 
-  # 2. Política per permetre que tothom llegeixi els fitxers de la web
-  BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
+  # 2. La instància EC2 (El servidor)
+  MevaInstanciaEC2:
+    Type: 'AWS::EC2::Instance'
     Properties:
-      Bucket: !Ref BucketWebClasse
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: PublicReadGetObject
-            Effect: Allow
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Sub '${BucketWebClasse.Arn}/*'
-
-  # 3. El fitxer HTML que pugem al bucket
-  FitxerIndex:
-    Type: 'AWS::S3::Object'
-    Properties:
-      Target:
-        Bucket: !Ref BucketWebClasse
-        Key: 'index.html'
-      Source: 'SourceArtifact/index.html'
-      ContentType: 'text/html'
+      # Busquem la imatge d'Amazon Linux 2 més recent
+      ImageId: 'ami-0c55b159cbfafe1f0' # Nota: Aquesta AMI pot variar segons la regió. Si falla, canvia-la per una de la teva regió.
+      InstanceType: 't2.micro' # Capa gratuïta
+      SecurityGroups:
+        - !Ref MeuGrupDeSeguretat
+      # Aquí posem el codi que s'executarà en arrencar el servidor
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<h1>Hola ${NomAlumne}!</h1><p>Aquest servidor s'ha desplegat automàticament amb CodePipeline.</p>" > /var/www/html/index.html
+      Tags:
+        - Key: 'Name'
+          Value: !Sub 'Servidor-${NomAlumne}'
 
 Outputs:
-  URLWeb:
-    Description: 'URL de la web desplegada'
-    Value: !GetAtt BucketWebClasse.WebsiteURL
+  IPPublica:
+    Description: 'IP pública del servidor web'
+    Value: !GetAtt MevaInstanciaEC2.PublicIp
