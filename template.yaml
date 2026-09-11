@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Plantilla per desplegar una web estatica amb S3 - Classe DevOps"
+
+Resources:
+  # 1. El Bucket de S3 on viurà la web
+  BucketWebClasse:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      # Nom únic (canvieu el sufix si algú ja l'ha agafat)
+      BucketName: "web-classe-devops-2024-exemple"
+      # Configurem el bucket com a web estàtica
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+      # Obrim la web al públic (perquè tothom la pugui veure)
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  # 2. Política per permetre que tothom llegeixi els fitxers de la web
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref BucketWebClasse
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${BucketWebClasse.Arn}/*"
+
+  # 3. El fitxer HTML que pugem al bucket (El codi de la web)
+  FitxerIndex:
+    Type: "AWS::S3::Object"
+    Properties:
+      Target:
+        Bucket: !Ref BucketWebClasse
+        Key: "index.html"
+      # Aquí llegim el fitxer del repositori de GitHub
+      # El pipeline s'encarrega de posar el codi font a la carpeta 'SourceArtifact'
+      Source: "SourceArtifact/index.html"
+      ContentType: "text/html"
+
+# Sortida: La URL on podran veure la seva web
+Outputs:
+  URLWeb:
+    Description: "URL de la web desplegada"
+    Value: !GetAtt BucketWebClasse.WebsiteURL
