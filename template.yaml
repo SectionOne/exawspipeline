@@ -30,9 +30,9 @@ Resources:
   MevaInstanciaEC2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      # Imatge d'Amazon Linux 2
-      ImageId: 'ami-09171dea6a93bdc99'
-      InstanceType: 't3.micro' # Capa gratuïta
+      # Imatge d'Amazon Linux 2 (Recorda canviar-la segons la teva regió)
+      ImageId: 'ami-09171dea6a93bdc99' 
+      InstanceType: 't2.micro' # Capa gratuïta
       SecurityGroups:
         - !Ref MeuGrupDeSeguretat
       # Aquí posem el codi que s'executarà en arrencar el servidor
