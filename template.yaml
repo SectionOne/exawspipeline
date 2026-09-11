@@ -30,8 +30,8 @@ Resources:
   MevaInstanciaEC2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      # Busquem la imatge d'Amazon Linux 2 més recent
-      ImageId: 'ami-0c55b159cbfafe1f0' # Nota: Aquesta AMI pot variar segons la regió. Si falla, canvia-la per una de la teva regió.
+      # Imatge d'Amazon Linux 2
+      ImageId: 'ami-09171dea6a93bdc99'
       InstanceType: 't2.micro' # Capa gratuïta
       SecurityGroups:
         - !Ref MeuGrupDeSeguretat
